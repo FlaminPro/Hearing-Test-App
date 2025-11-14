@@ -10,12 +10,15 @@ public class AudiometryTest : MonoBehaviour
     [Tooltip("Drag your 'AudioWaves' (ToneGenerator) script here")]
     public AudioWaves toneGenerator;
 
+    [Header("Manager References")]
+    public UI uiManager; // <-- NEW: Drag your UI script here
+
     [Header("UI Elements")]
     public Button heardButton;
+    public Button noResponseButton;
     public TMP_Text statusText;
 
     // This is where the test results will be stored
-    // (e.g., 1000Hz = 20dB HL, 2000Hz = 15dB HL)
     private Dictionary<float, int> audiogramResults = new Dictionary<float, int>();
 
     // This is the calibration data we will load
@@ -23,7 +26,7 @@ public class AudiometryTest : MonoBehaviour
 
     // --- Internal Test Logic Variables ---
     private int currentFreqIndex = 0;
-    private int currentTestHL = 20; // Start test at 20 dB HL
+    private int currentTestHL = 20;
     private int ascendingResponses = 0;
     private bool isWaitingForResponse = false;
     private Coroutine responseTimer;
@@ -31,14 +34,12 @@ public class AudiometryTest : MonoBehaviour
     // The frequencies to test (MUST match calibration)
     private float[] frequenciesToTest = { 1000, 2000, 4000, 8000, 500, 250 };
 
-
     void OnEnable()
     {
         // 1. GET THE CALIBRATION DATA!
         if (StaticDataAndHelpers.thresholds_dBFS == null)
         {
             statusText.text = "ERROR: Calibration data not found!";
-            // You should probably send the user back to the main menu here
             return;
         }
 
@@ -46,6 +47,7 @@ public class AudiometryTest : MonoBehaviour
 
         // 2. Setup the test
         heardButton.onClick.AddListener(OnUserHeard);
+        noResponseButton.onClick.AddListener(OnUserDidNotHear);
         audiogramResults.Clear();
 
         // 3. Start the test
@@ -54,12 +56,14 @@ public class AudiometryTest : MonoBehaviour
 
     void OnDisable()
     {
-        // Stop all sound when this panel is hidden
         if (toneGenerator != null)
         {
             toneGenerator.audioSource.Stop();
         }
         StopAllCoroutines();
+
+        if (heardButton != null) heardButton.onClick.RemoveListener(OnUserHeard);
+        if (noResponseButton != null) noResponseButton.onClick.RemoveListener(OnUserDidNotHear);
     }
 
     // This is the main test loop
@@ -70,36 +74,30 @@ public class AudiometryTest : MonoBehaviour
             float freq = frequenciesToTest[currentFreqIndex];
             statusText.text = $"Testing: {freq} Hz";
 
-            // Check if this frequency was calibrated
             if (!calibrationData.ContainsKey(freq) || float.IsPositiveInfinity(calibrationData[freq]))
             {
                 Debug.Log($"Skipping {freq} Hz (No Response in calibration).");
                 audiogramResults[freq] = -1; // -1 means "NR"
-                continue; // Skip to next frequency
+                continue;
             }
 
             // Reset logic for this frequency
-            currentTestHL = 20; // Start at 20 dB HL
+            currentTestHL = 20;
             ascendingResponses = 0;
 
             // Run the "10-down, 5-up" logic
             while (true)
             {
-                // *** THIS IS THE MOST IMPORTANT LINE ***
-                // It combines your calibration data with the test level (HL)
-                // to get the final dBFS value to play.
-                float zero_dB_HL = calibrationData[freq]; // e.g., -55 dBFS
-                float testLevel_dBFS = zero_dB_HL + currentTestHL; // e.g., -55 + 20 = -35 dBFS
-                                                                   // ***
+                float zero_dB_HL = calibrationData[freq];
+                float testLevel_dBFS = zero_dB_HL + currentTestHL;
 
-                // Safety Check: Don't play louder than 0 dBFS
+                // Safety Check
                 if (testLevel_dBFS > 0)
                 {
                     testLevel_dBFS = 0;
-                    // If we're at max volume, we can't test further
                     Debug.LogWarning($"Reached max volume for {freq} Hz.");
                     audiogramResults[freq] = -1; // Mark as No Response
-                    break; // Stop testing this frequency
+                    break;
                 }
 
                 // 1. SET TONE
@@ -108,7 +106,7 @@ public class AudiometryTest : MonoBehaviour
 
                 // 2. PLAY TONE
                 toneGenerator.audioSource.Play();
-                yield return new WaitForSeconds(1.0f); // Play for 1 second
+                yield return new WaitForSeconds(1.0f);
                 toneGenerator.audioSource.Stop();
 
                 // 3. WAIT FOR RESPONSE
@@ -134,7 +132,7 @@ public class AudiometryTest : MonoBehaviour
 
     IEnumerator ResponseTimer()
     {
-        yield return new WaitForSeconds(2.0f); // Wait 2 seconds
+        yield return new WaitForSeconds(2.0f);
         if (isWaitingForResponse)
         {
             isWaitingForResponse = false;
@@ -148,8 +146,17 @@ public class AudiometryTest : MonoBehaviour
         isWaitingForResponse = false;
         StopCoroutine(responseTimer);
 
-        ascendingResponses++; // Record positive response
+        ascendingResponses++;
         currentTestHL -= 10; // 10-DOWN
+    }
+
+    public void OnUserDidNotHear()
+    {
+        if (!isWaitingForResponse) return;
+        isWaitingForResponse = false;
+        StopCoroutine(responseTimer);
+
+        OnUserMissed();
     }
 
     void OnUserMissed()
@@ -161,16 +168,29 @@ public class AudiometryTest : MonoBehaviour
     void FinishTest()
     {
         Debug.Log("--- TEST COMPLETE ---");
-        statusText.text = "Test Complete! See console for results.";
+        statusText.text = "Test Complete!";
 
-        // This is your final audiogram!
+        // --- THIS IS THE CRITICAL UPDATE ---
+
+        // 1. Save the final results to our static class
+        // We are saving a *new copy* just to be safe.
+        StaticDataAndHelpers.audiogramResults = new Dictionary<float, int>(this.audiogramResults);
+
+        // 2. Tell the UI manager to move to the results screen
+        if (uiManager != null)
+        {
+            uiManager.ShowResultsMenu();
+        }
+        else
+        {
+            Debug.LogError("UIManager is not assigned on AudiometryTest!");
+        }
+
+        // We no longer need this debug log, but you can keep it
         foreach (var result in audiogramResults)
         {
-            // A result of -1 means "No Response"
             string threshold = (result.Value == -1) ? "No Response" : result.Value + " dB HL";
             Debug.Log($"Result: {result.Key} Hz = {threshold}");
         }
-
-        // Now you can move to a "Results Panel"
     }
 }
