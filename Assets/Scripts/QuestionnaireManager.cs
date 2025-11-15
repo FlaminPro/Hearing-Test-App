@@ -10,7 +10,7 @@ public class QuestionnaireManager : MonoBehaviour
 
     [Header("Step 1: Basic Info")]
     public TMP_InputField nameInput;
-    public TMP_InputField ageInput;
+    public InputField ageInput;
     public TMP_Dropdown genderDropdown; // Options: Male, Female, Other...
 
     [Header("Step 2: Noise Exposure")]
