@@ -81,8 +81,20 @@ public class ResultsManager : MonoBehaviour
         hearingStatusText.text = $"YOUR HEARING IS: {hearingStatus}";
         averageThresholdText.text = $"Average threshold: {averageThreshold:F1} dB HL";
 
-        // (Risk/Rec text building remains the same)
-        // ...
+        StringBuilder sbRisks = new StringBuilder();
+        foreach (var risk in currentRisks)
+        {
+            sbRisks.AppendLine($"<b>[{risk.severity.ToUpper()}] {risk.factor}</b>");
+            sbRisks.AppendLine($"<size=24><i>{risk.description}</i></size>\n");
+        }
+        riskFactorsText.text = currentRisks.Count > 0 ? sbRisks.ToString() : "No significant risk factors identified.";
+
+        StringBuilder sbRecs = new StringBuilder();
+        foreach (var rec in currentRecs)
+        {
+            sbRecs.AppendLine($"• {rec}");
+        }
+        recommendationsText.text = sbRecs.ToString();
 
         // Plot BOTH sets of dots
         PlotAudiogram(resultsLeft, audiogramDotsLeft);
