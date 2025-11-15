@@ -8,6 +8,8 @@ public class HearingTestManager : MonoBehaviour
     [Header("Script References")]
     [Tooltip("Drag your 'AudioWaves' script component here")]
     public AudioWaves toneGenerator;
+    [Tooltip("Drag your 'UI' script component here")]
+    public UI uiScript;
 
     [Header("UI Elements")]
     [Tooltip("The main slider for 'barely hearable' level")]
@@ -175,7 +177,6 @@ public class HearingTestManager : MonoBehaviour
             Debug.Log($"Result: {entry.Key} Hz at {entry.Value} dBFS");
         }
 
-        // Now you can disable this panel and move to the main test
-        // (e.g., this.gameObject.SetActive(false); )
+        uiScript.TestMenuFunc();
     }
 }

@@ -9,7 +9,8 @@ public static class StaticDataAndHelpers
 
     // --- NEW ---
     // This will hold the final test results
-    public static Dictionary<float, int> audiogramResults;
+    public static Dictionary<float, int> audiogramResultsLeft;
+    public static Dictionary<float, int> audiogramResultsRight;
 
     // --- OLD ---
     public static Dictionary<int, Dictionary<int, int>> AverageHearingDataMales { get; private set; }
@@ -20,7 +21,8 @@ public static class StaticDataAndHelpers
     {
         // Initialize new, empty objects when the app starts
         patientHistory = new PatientHistory();
-        audiogramResults = new Dictionary<float, int>();
+        audiogramResultsLeft = new Dictionary<float, int>();
+        audiogramResultsRight = new Dictionary<float, int>();
 
         if (AverageHearingDataMales != null || AverageHearingDataFemales != null) return;
 
