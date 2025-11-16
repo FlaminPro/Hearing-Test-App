@@ -39,6 +39,15 @@ public class ResultsManager : MonoBehaviour
     [Tooltip("UI Images for RIGHT ear dots: 250, 500, 1k, 2k, 4k, 8k")]
     public List<RectTransform> audiogramDotsRight; // 6 dots
 
+    // --- NEW ---
+    [Header("Audiogram Lines")]
+    [Tooltip("LineRenderer for the LEFT ear. Must have UseWorldSpace = false.")]
+    public LineRenderer lineRendererLeft;
+
+    [Tooltip("LineRenderer for the RIGHT ear. Must have UseWorldSpace = false.")]
+    public LineRenderer lineRendererRight;
+    // --- END NEW ---
+
     // --- Private Data ---
     private PatientHistory history;
     private Dictionary<float, int> resultsLeft;
@@ -98,14 +107,15 @@ public class ResultsManager : MonoBehaviour
         }
         recommendationsText.text = sbRecs.ToString();
 
-        // Plot BOTH sets of dots
-        PlotAudiogram(resultsLeft, audiogramDotsLeft);
-        PlotAudiogram(resultsRight, audiogramDotsRight);
+        // Plot BOTH sets of dots AND lines
+        // --- MODIFIED ---
+        PlotAudiogram(resultsLeft, audiogramDotsLeft, lineRendererLeft);
+        PlotAudiogram(resultsRight, audiogramDotsRight, lineRendererRight);
+        // --- END MODIFIED ---
 
         if (downloadStatusText != null) { downloadStatusText.text = ""; }
     }
 
-    // --- THIS FUNCTION CONTAINS THE BUG FIX ---
     float CalculateAverageThreshold()
     {
         float total = 0;
@@ -118,12 +128,10 @@ public class ResultsManager : MonoBehaviour
             {
                 if (resultsLeft[freq] == -1)
                 {
-                    // "No Response" counts as the max testable volume
                     total += maxTestHL;
                 }
                 else
                 {
-                    // Valid threshold found
                     total += resultsLeft[freq];
                 }
                 count++;
@@ -136,12 +144,10 @@ public class ResultsManager : MonoBehaviour
             {
                 if (resultsRight[freq] == -1)
                 {
-                    // "No Response" counts as the max testable volume
                     total += maxTestHL;
                 }
                 else
                 {
-                    // Valid threshold found
                     total += resultsRight[freq];
                 }
                 count++;
@@ -151,8 +157,9 @@ public class ResultsManager : MonoBehaviour
         return (count == 0) ? 0 : (total / count);
     }
 
-    // This function now plots one set of dots at a time
-    void PlotAudiogram(Dictionary<float, int> results, List<RectTransform> dots)
+    // --- THIS FUNCTION IS MODIFIED ---
+    // It now takes a LineRenderer and plots a line connecting the valid dots
+    void PlotAudiogram(Dictionary<float, int> results, List<RectTransform> dots, LineRenderer lineRenderer)
     {
         if (audiogramChartArea == null || dots == null || dots.Count != frequencies.Length)
         {
@@ -164,6 +171,10 @@ public class ResultsManager : MonoBehaviour
         float maxDB = 100f;
         float minDB = 0f;
 
+        // This list will store the local positions for the line renderer
+        List<Vector3> linePositions = new List<Vector3>();
+
+        // --- Part 1: Plot Dots (Mostly existing logic) ---
         for (int i = 0; i < frequencies.Length; i++)
         {
             float freq = frequencies[i];
@@ -172,11 +183,14 @@ public class ResultsManager : MonoBehaviour
                 float dbValue = results[freq];
                 float y_percent = 1.0f - Mathf.InverseLerp(minDB, maxDB, dbValue);
 
-                // This calculation is improved for center pivot
                 float y_pos = (y_percent - 0.5f) * chartHeight;
 
                 dots[i].anchoredPosition = new Vector2(dots[i].anchoredPosition.x, y_pos);
                 dots[i].gameObject.SetActive(true);
+
+                // Add this dot's position to the line
+                // We use (x, y, 0) for the Vector3
+                linePositions.Add(new Vector3(dots[i].anchoredPosition.x, y_pos, 0));
             }
             else
             {
@@ -184,26 +198,42 @@ public class ResultsManager : MonoBehaviour
                 dots[i].gameObject.SetActive(false);
             }
         }
-    }
 
-    // This is called by the `downloadReportButton`
+        // --- Part 2: Plot Line (New Logic) ---
+        if (lineRenderer != null)
+        {
+            if (linePositions.Count > 1) // Need at least 2 points to draw a line
+            {
+                lineRenderer.gameObject.SetActive(true);
+                lineRenderer.positionCount = linePositions.Count;
+                lineRenderer.SetPositions(linePositions.ToArray());
+            }
+            else
+            {
+                // Not enough points to draw a line, hide it
+                lineRenderer.gameObject.SetActive(false);
+            }
+        }
+        else
+        {
+            // Only log warning if dots were actually found, otherwise it's just spam
+            if (linePositions.Count > 0)
+                Debug.LogWarning("LineRenderer not assigned. Skipping line plot.");
+        }
+    }
+    // --- END MODIFIED FUNCTION ---
+
     public void OnDownloadReport()
     {
         Debug.Log("Generating report...");
 
-        // 1. Build the report string
         string report = BuildReportString();
-
-        // 2. Define a file path
         string fileName = $"Hearing_Test_{history.name.Replace(" ", "_")}_{DateTime.Now:yyyy-MM-dd}.txt";
         string filePath = Path.Combine(Application.persistentDataPath, fileName);
 
         try
         {
-            // 3. Save the file
             File.WriteAllText(filePath, report);
-
-            // 4. Notify the user
             Debug.Log($"Report saved to: {filePath}");
             if (downloadStatusText != null)
             {
@@ -220,17 +250,16 @@ public class ResultsManager : MonoBehaviour
         }
     }
 
-    // Added L/R results to the report
     private string BuildReportString()
     {
         StringBuilder report = new StringBuilder();
-        string divider = "???????????????????????????????????????????????????????\n";
+        string divider = "-------------------------------------------------------\n"; // Changed divider
 
         report.AppendLine(divider);
         report.AppendLine("HEARING TEST REPORT");
         report.AppendLine(divider);
         report.AppendLine("\nPATIENT INFORMATION");
-        report.AppendLine("???????????????????????????????????????????????????????");
+        report.AppendLine("......................................................."); // Changed divider
         report.AppendLine($"Name:           {history.name}");
         report.AppendLine($"Age:            {history.age}");
         report.AppendLine($"Gender:         {history.gender}");
@@ -242,7 +271,7 @@ public class ResultsManager : MonoBehaviour
         report.AppendLine($"Average Threshold:    {averageThreshold:F1} dB HL\n");
 
         report.AppendLine("\nDETAILED AUDIOGRAM DATA");
-        report.AppendLine("???????????????????????????????????????????????????????");
+        report.AppendLine(".......................................................");
 
         report.AppendLine("\nLEFT EAR:");
         foreach (float freq in frequencies)
