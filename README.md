@@ -40,7 +40,7 @@
    <section class="mt-8">
             <h2 class="text-2xl font-semibold text-gray-900 mb-4">🚀 Our Solution</h2>
             <p class="mb-4">
-                This project aims to bridge the gap by providing a <strong>free, accessible, and reliable</strong> mobile screening tool. It allows anyone with a smartphone and a pair of headphones to get a preliminary check of their hearing in a private, convenient setting.
+                This project aims to bridge the gap by providing a <strong>free, accessible, and reliable</strong> mobile screening tool. It allows anyone with a smartphone and a pair of headphone to get a preliminary check of their hearing in a private, convenient setting.
             </p>
             <p class="p-4 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-800 rounded-r-lg">
                 The app is <strong>not a medical diagnosis</strong> but serves as a vital first step to empower users, promote early detection, and encourage those with potential hearing loss to seek professional medical advice.
