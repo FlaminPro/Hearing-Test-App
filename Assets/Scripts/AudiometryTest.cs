@@ -8,9 +8,7 @@ public enum TestEar { Left, Right, Done }
 
 public class AudiometryTest : MonoBehaviour
 {
-    [Header("Script References")]
     public AudioWaves toneGenerator;
-    public UI uiManager;
 
     [Header("UI Elements")]
     public Button heardButton;
@@ -29,8 +27,6 @@ public class AudiometryTest : MonoBehaviour
     private float[] frequenciesToTest = { 1000, 2000, 4000, 8000, 500, 250 };
     private int maxTestHL = 100;
 
-    // --- NEW ---
-    // This flag will be set to true by OnUserHeard() to break the loop.
     private bool isFrequencyDone = false;
 
     void OnEnable()
@@ -80,8 +76,6 @@ public class AudiometryTest : MonoBehaviour
         FinishTest();
     }
 
-    // --- LOGIC UPDATED ---
-    // This loop now only breaks when isFrequencyDone = true
     IEnumerator RunTestForCurrentEar()
     {
         for (currentFreqIndex = 0; currentFreqIndex < frequenciesToTest.Length; currentFreqIndex++)
@@ -96,28 +90,26 @@ public class AudiometryTest : MonoBehaviour
             }
 
             currentTestHL = 20;
-            isFrequencyDone = false; // Reset the flag for the new frequency
+            isFrequencyDone = false;
 
-            while (!isFrequencyDone) // Loop until "Heard" is pressed
+            while (!isFrequencyDone)
             {
                 float zero_dB_HL = calibrationData[freq];
                 float testLevel_dBFS = zero_dB_HL + currentTestHL;
 
-                // Check 1: Clinical limit
                 if (currentTestHL > maxTestHL)
                 {
                     RecordResult(-1);
-                    isFrequencyDone = true; // Break the loop
-                    continue; // Skip the rest of this loop iteration
+                    isFrequencyDone = true;
+                    continue;
                 }
 
-                // Check 2: Physical limit
                 if (testLevel_dBFS > 0)
                 {
                     testLevel_dBFS = 0;
                     RecordResult(-1);
-                    isFrequencyDone = true; // Break the loop
-                    continue; // Skip the rest of this loop iteration
+                    isFrequencyDone = true;
+                    continue;
                 }
 
                 toneGenerator.frequency = freq;
@@ -130,9 +122,6 @@ public class AudiometryTest : MonoBehaviour
                 isWaitingForResponse = true;
                 responseTimer = StartCoroutine(ResponseTimer());
                 while (isWaitingForResponse) { yield return null; }
-
-                // The loop will now repeat at a new HL if "No Response" was pressed,
-                // or it will exit if "Heard" was pressed (isFrequencyDone = true)
             }
         }
     }
@@ -160,17 +149,15 @@ public class AudiometryTest : MonoBehaviour
         }
     }
 
-    // --- LOGIC UPDATED ---
     void OnUserHeard()
     {
         if (!isWaitingForResponse) return;
         isWaitingForResponse = false;
         StopCoroutine(responseTimer);
 
-        // 1. Record the threshold at the *current* level
+
         RecordResult(currentTestHL);
 
-        // 2. Set the flag to true to break the 'while' loop
         isFrequencyDone = true;
     }
 
@@ -183,11 +170,8 @@ public class AudiometryTest : MonoBehaviour
         OnUserMissed();
     }
 
-    // --- LOGIC UPDATED ---
     void OnUserMissed()
     {
-        // "No Response" simply increases the level for the next loop.
-        // It no longer resets any counters.
         currentTestHL += 5;
     }
 
@@ -200,9 +184,6 @@ public class AudiometryTest : MonoBehaviour
         StaticDataAndHelpers.audiogramResultsLeft = this.audiogramResultsLeft;
         StaticDataAndHelpers.audiogramResultsRight = this.audiogramResultsRight;
 
-        if (uiManager != null)
-        {
-            uiManager.ShowResultsMenu();
-        }
+        UI.instance.ShowResultsMenu();
     }
 }

@@ -4,20 +4,17 @@ using TMPro;
 
 public class QuestionnaireManager : MonoBehaviour
 {
-    [Header("Manager Reference")]
-    public UI uiManager; // Drag your UI script here
-
     [Header("Step 1: Basic Info")]
     public TMP_InputField nameInput;
     public InputField ageInput;
-    public TMP_Dropdown genderDropdown; // Options: Male, Female, Other...
+    public TMP_Dropdown genderDropdown;
 
     [Header("Step 2: Noise Exposure")]
     public Toggle occupationalNoiseToggle;
     public Toggle recreationalNoiseToggle;
     public Toggle militaryNoiseToggle;
     public TMP_Text DurationOfExposureText;
-    public TMP_Dropdown noiseDurationDropdown; // Options: <1, 1-5, 5-10, 10+
+    public TMP_Dropdown noiseDurationDropdown;
 
     [Header("Step 3: Medical History")]
     public Toggle diabetesToggle;
@@ -26,10 +23,9 @@ public class QuestionnaireManager : MonoBehaviour
     public Toggle autoimmuneToggle;
     public Toggle currentMedsToggle;
     public Toggle pastMedsToggle;
-    // For "medTypes", you could use a group of toggles
 
     [Header("Step 4: Ear History")]
-    public TMP_Dropdown infectionsDropdown; // Options: none, childhood, recent, chronic
+    public TMP_Dropdown infectionsDropdown;
     public Toggle earSurgeryToggle;
     public Toggle earTraumaToggle;
     public Toggle suddenLossToggle;
@@ -37,14 +33,12 @@ public class QuestionnaireManager : MonoBehaviour
     [Header("Step 5: Symptoms")]
     public Toggle tinnitusToggle;
     public TMP_Text tinnitusFrequencyText;
-    public TMP_Dropdown tinnitusFrequencyDropdown; // Options: rarely, occasionally...
+    public TMP_Dropdown tinnitusFrequencyDropdown;
     public Toggle dizzinessToggle;
     public Toggle earPainToggle;
     public Toggle earFullnessToggle;
     public Toggle familyHistoryToggle;
     public Toggle hearingAidUseToggle;
-
-    // This is called by the "Complete & Continue" button
 
 
     [Header("Steps Manager")]
@@ -52,9 +46,12 @@ public class QuestionnaireManager : MonoBehaviour
     [SerializeField] Button PreviousBTN;
     [SerializeField] Button NextBTN;
     [SerializeField] Button ContinueBTN;
+    [SerializeField] TMP_Text StatusText;
     private int StepsArrayIndex = 0;
 
-    private void Start()
+    public static QuestionnaireManager instance;
+
+    private void Awake()
     {
         if (StepsArrayIndex == 0)
         {
@@ -73,7 +70,12 @@ public class QuestionnaireManager : MonoBehaviour
             Steps[3].SetActive(false);
             Steps[4].SetActive(true);
         }
-        
+
+        //Singleton
+        instance = this;
+
+        //Events
+        ContinueBTN.onClick.AddListener(ContinueBTN_OnClick);
     }
 
     private void Update()
@@ -81,12 +83,12 @@ public class QuestionnaireManager : MonoBehaviour
         QuestionaireFormWorking();
     }
 
-    public void OnContinueButton()
+    public void ContinueBTN_OnClick()
     {
-        // 1. Get the static patientHistory object
-        PatientHistory history = StaticDataAndHelpers.patientHistory;
+        if (CheckForAnyEmptyField()) return;
 
-        // 2. Save all data from the UI into the object
+        StatusText.text = string.Empty;
+        PatientHistory history = StaticDataAndHelpers.patientHistory;
 
         // Step 1
         history.name = nameInput.text;
@@ -106,7 +108,6 @@ public class QuestionnaireManager : MonoBehaviour
         history.medicalConditions.autoimmune = autoimmuneToggle.isOn;
         history.ototoxicMedications.current = currentMedsToggle.isOn;
         history.ototoxicMedications.past = pastMedsToggle.isOn;
-        // (Add logic for medTypes if you implemented them)
 
         // Step 4
         history.earHistory.infections = infectionsDropdown.options[infectionsDropdown.value].text;
@@ -123,18 +124,8 @@ public class QuestionnaireManager : MonoBehaviour
         history.familyHistory = familyHistoryToggle.isOn;
         history.hearingAidUse = hearingAidUseToggle.isOn;
 
-        // 3. Log for debugging
         Debug.Log("Patient History Saved. Age: " + history.age + ", Gender: " + history.gender);
-
-        // 4. Move to the next screen
-        if (uiManager != null)
-        {
-            uiManager.CalibrateMenu();
-        }
-        else
-        {
-            Debug.LogError("UIManager not set on QuestionnaireManager!");
-        }
+        UI.instance.CalibrateMenu();
     }
 
     public void PreviousBTNFunc()
@@ -177,6 +168,87 @@ public class QuestionnaireManager : MonoBehaviour
         {
             tinnitusFrequencyText.gameObject.SetActive(tinnitusToggle.isOn);
             tinnitusFrequencyDropdown.gameObject.SetActive(tinnitusToggle.isOn);
+        }
+    }
+
+    public void ResetDefaults()
+    {
+        Steps[0].SetActive(true);
+        Steps[1].SetActive(false);
+        Steps[2].SetActive(false);
+        Steps[3].SetActive(false);
+        Steps[4].SetActive(false);
+        StatusText.text = string.Empty;
+        StepsArrayIndex = 0;
+        //Reset Step 1
+        nameInput.text = string.Empty;
+        ageInput.text = string.Empty;
+        genderDropdown.value = 0;
+        genderDropdown.RefreshShownValue();
+
+        //Reset Step 2
+        occupationalNoiseToggle.isOn = false;
+        recreationalNoiseToggle.isOn = false;
+        militaryNoiseToggle.isOn = false;
+        noiseDurationDropdown.value = 0;
+        noiseDurationDropdown.RefreshShownValue();
+
+        //Reset Step 3
+        diabetesToggle.isOn = false;
+        cardiovascularToggle.isOn = false;
+        hypertensionToggle.isOn = false;
+        autoimmuneToggle.isOn = false;
+        currentMedsToggle.isOn = false;
+        pastMedsToggle.isOn = false;
+
+        //Reset Step 4
+        infectionsDropdown.value = 0;
+        infectionsDropdown.RefreshShownValue();
+        earSurgeryToggle.isOn = false;
+        earTraumaToggle.isOn = false;
+        suddenLossToggle.isOn = false;
+
+        //Reset Step 5
+        tinnitusToggle.isOn = false;
+        tinnitusFrequencyDropdown.value = 0;
+        tinnitusFrequencyDropdown.RefreshShownValue();
+        dizzinessToggle.isOn = false;
+        earPainToggle.isOn = false;
+        earFullnessToggle.isOn = false;
+        familyHistoryToggle.isOn = false;
+        hearingAidUseToggle.isOn = false;
+    }
+
+    private bool CheckForAnyEmptyField()
+    {
+        if (nameInput.text == string.Empty)
+        {
+            StatusText.text = "Name cannot be Empty";
+            return true;
+        }
+        else if(ageInput.text == string.Empty)
+        {
+            StatusText.text = "Age cannot be Empty";
+            return true;
+        }
+        else if((occupationalNoiseToggle.isOn || recreationalNoiseToggle.isOn || militaryNoiseToggle.isOn) && noiseDurationDropdown.value == 0)
+        {
+            StatusText.text = "Select a Noise Duration or Disable Any Checkboxes Related to It";
+            return true;
+        }
+        else if(infectionsDropdown.value == 0)
+        {
+            StatusText.text = "Select infections History, if None Then Select No History Option";
+            return true;
+        }
+        else if(tinnitusToggle.isOn && tinnitusFrequencyDropdown.value == 0)
+        {
+            StatusText.text = "Select a Tinnitus Frequency or Disable the Tinnitus Checkbox";
+            return true;
+        }
+        else
+        {
+            return false;
         }
     }
 }

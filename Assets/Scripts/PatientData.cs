@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
 
-// This file defines the data structure for storing all patient info,
-// mirroring the 'PatientHistory' interface from Questionnaire.tsx.
 
 [Serializable]
 public class NoiseExposureHistory
@@ -10,7 +8,7 @@ public class NoiseExposureHistory
     public bool occupational;
     public bool recreational;
     public bool military;
-    public string duration = ""; // e.g., "<1", "1-5", "5-10", "10+"
+    public string duration = "";
 }
 
 [Serializable]
@@ -33,7 +31,7 @@ public class OtotoxicMedications
 [Serializable]
 public class EarHistory
 {
-    public string infections = ""; // e.g., "none", "childhood", "recent", "chronic"
+    public string infections = "";
     public bool surgery;
     public bool trauma;
     public bool suddenHearingLoss;
@@ -43,13 +41,13 @@ public class EarHistory
 public class Symptoms
 {
     public bool tinnitus;
-    public string tinnitusFrequency = ""; // e.g., "rarely", "occasionally", "frequently", "constant"
+    public string tinnitusFrequency = "";
     public bool dizziness;
     public bool earPain;
     public bool earFullness;
 }
 
-// This is the main class that holds all the patient data
+
 [Serializable]
 public class PatientHistory
 {

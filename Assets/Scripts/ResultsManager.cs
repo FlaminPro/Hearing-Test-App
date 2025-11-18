@@ -15,8 +15,6 @@ public class RiskFactor
 
 public class ResultsManager : MonoBehaviour
 {
-    [Header("Manager Reference")]
-    public UI uiManager;
 
     [Header("UI Text Elements")]
     public TMP_Text hearingStatusText;
@@ -34,21 +32,18 @@ public class ResultsManager : MonoBehaviour
     public RectTransform audiogramChartArea;
 
     [Tooltip("UI Images for LEFT ear dots: 250, 500, 1k, 2k, 4k, 8k")]
-    public List<RectTransform> audiogramDotsLeft; // 6 dots
+    public List<RectTransform> audiogramDotsLeft;
 
     [Tooltip("UI Images for RIGHT ear dots: 250, 500, 1k, 2k, 4k, 8k")]
-    public List<RectTransform> audiogramDotsRight; // 6 dots
+    public List<RectTransform> audiogramDotsRight;
 
-    // --- NEW ---
     [Header("Audiogram Lines")]
     [Tooltip("LineRenderer for the LEFT ear. Must have UseWorldSpace = false.")]
     public LineRenderer lineRendererLeft;
 
     [Tooltip("LineRenderer for the RIGHT ear. Must have UseWorldSpace = false.")]
     public LineRenderer lineRendererRight;
-    // --- END NEW ---
 
-    // --- Private Data ---
     private PatientHistory history;
     private Dictionary<float, int> resultsLeft;
     private Dictionary<float, int> resultsRight;
@@ -57,8 +52,6 @@ public class ResultsManager : MonoBehaviour
     private float averageThreshold = 0;
     private List<RiskFactor> currentRisks = new List<RiskFactor>();
     private List<string> currentRecs = new List<string>();
-
-    // This MUST match the maxTestHL in AudiometryTest.cs
     private int maxTestHL = 100;
 
 
@@ -66,10 +59,10 @@ public class ResultsManager : MonoBehaviour
     {
         if (downloadReportButton != null)
             downloadReportButton.onClick.AddListener(OnDownloadReport);
-        if (retestButton != null && uiManager != null)
-            retestButton.onClick.AddListener(uiManager.Retest);
-        if (menuButton != null && uiManager != null)
-            menuButton.onClick.AddListener(uiManager.ReturnToMainMenu);
+        if (retestButton != null)
+            retestButton.onClick.AddListener(UI.instance.Retest);
+        if (menuButton != null)
+            menuButton.onClick.AddListener(UI.instance.ReturnToMainMenu);
     }
 
     public void DisplayResults()
@@ -107,11 +100,8 @@ public class ResultsManager : MonoBehaviour
         }
         recommendationsText.text = sbRecs.ToString();
 
-        // Plot BOTH sets of dots AND lines
-        // --- MODIFIED ---
         PlotAudiogram(resultsLeft, audiogramDotsLeft, lineRendererLeft);
         PlotAudiogram(resultsRight, audiogramDotsRight, lineRendererRight);
-        // --- END MODIFIED ---
 
         if (downloadStatusText != null) { downloadStatusText.text = ""; }
     }
@@ -157,8 +147,6 @@ public class ResultsManager : MonoBehaviour
         return (count == 0) ? 0 : (total / count);
     }
 
-    // --- THIS FUNCTION IS MODIFIED ---
-    // It now takes a LineRenderer and plots a line connecting the valid dots
     void PlotAudiogram(Dictionary<float, int> results, List<RectTransform> dots, LineRenderer lineRenderer)
     {
         if (audiogramChartArea == null || dots == null || dots.Count != frequencies.Length)
@@ -171,10 +159,8 @@ public class ResultsManager : MonoBehaviour
         float maxDB = 100f;
         float minDB = 0f;
 
-        // This list will store the local positions for the line renderer
         List<Vector3> linePositions = new List<Vector3>();
 
-        // --- Part 1: Plot Dots (Mostly existing logic) ---
         for (int i = 0; i < frequencies.Length; i++)
         {
             float freq = frequencies[i];
@@ -188,21 +174,17 @@ public class ResultsManager : MonoBehaviour
                 dots[i].anchoredPosition = new Vector2(dots[i].anchoredPosition.x, y_pos);
                 dots[i].gameObject.SetActive(true);
 
-                // Add this dot's position to the line
-                // We use (x, y, 0) for the Vector3
                 linePositions.Add(new Vector3(dots[i].anchoredPosition.x, y_pos, 0));
             }
             else
             {
-                // Hide the dot if result is -1 (No Response)
                 dots[i].gameObject.SetActive(false);
             }
         }
 
-        // --- Part 2: Plot Line (New Logic) ---
         if (lineRenderer != null)
         {
-            if (linePositions.Count > 1) // Need at least 2 points to draw a line
+            if (linePositions.Count > 1)
             {
                 lineRenderer.gameObject.SetActive(true);
                 lineRenderer.positionCount = linePositions.Count;
@@ -210,18 +192,15 @@ public class ResultsManager : MonoBehaviour
             }
             else
             {
-                // Not enough points to draw a line, hide it
                 lineRenderer.gameObject.SetActive(false);
             }
         }
         else
         {
-            // Only log warning if dots were actually found, otherwise it's just spam
             if (linePositions.Count > 0)
                 Debug.LogWarning("LineRenderer not assigned. Skipping line plot.");
         }
     }
-    // --- END MODIFIED FUNCTION ---
 
     public void OnDownloadReport()
     {
@@ -234,23 +213,18 @@ public class ResultsManager : MonoBehaviour
         string basePath;
 
         #if UNITY_EDITOR
-        // 1. In Editor -> Use persistentDataPath
         basePath = Application.persistentDataPath;
 
         #elif UNITY_STANDALONE_WIN
-        // 2. Windows Build -> Folder where the EXE is
         basePath = Directory.GetParent(Application.dataPath).FullName;
 
         #elif UNITY_ANDROID
-        // 3. Android -> internal storage path
         basePath = Path.Combine("/storage/emulated/0", "HumanAuditoryAcuityAssessment");
 
         #else
-        // fallback
         basePath = Application.persistentDataPath;
         #endif
 
-        // Final path:
         string filePath = Path.Combine(basePath, fileName);
 
         try

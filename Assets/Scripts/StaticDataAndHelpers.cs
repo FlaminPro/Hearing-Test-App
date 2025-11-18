@@ -3,30 +3,27 @@ using System.Collections.Generic;
 
 public static class StaticDataAndHelpers
 {
-    // --- NEW ---
-    // This will hold the completed questionnaire data
     public static PatientHistory patientHistory;
 
-    // --- NEW ---
-    // This will hold the final test results
+    //ResultStorage
     public static Dictionary<float, int> audiogramResultsLeft;
     public static Dictionary<float, int> audiogramResultsRight;
 
-    // --- OLD ---
+    //CompairsionData
     public static Dictionary<int, Dictionary<int, int>> AverageHearingDataMales { get; private set; }
     public static Dictionary<int, Dictionary<int, int>> AverageHearingDataFemales { get; private set; }
-    public static Dictionary<float, float> thresholds_dBFS; // This is the CALIBRATION data
+    
+
+    public static Dictionary<float, float> thresholds_dBFS; // CALIBRATION Data
 
     public static void Init()
     {
-        // Initialize new, empty objects when the app starts
         patientHistory = new PatientHistory();
         audiogramResultsLeft = new Dictionary<float, int>();
         audiogramResultsRight = new Dictionary<float, int>();
 
         if (AverageHearingDataMales != null || AverageHearingDataFemales != null) return;
 
-        // (rest of your Init() data remains unchanged)
         AverageHearingDataMales = new Dictionary<int, Dictionary<int, int>>() {
             {250,  new Dictionary<int, int> () { {20,5}, {30,5}, {40,6}, {50,8}, {60,12}, {70,18} }},
             {500,  new Dictionary<int, int> () { {20,5}, {30,5}, {40,7}, {50,9}, {60,14}, {70,20} }},
@@ -47,7 +44,6 @@ public static class StaticDataAndHelpers
 
     public static int GetAgeGroupFromAge(int age)
     {
-        // (this function is unchanged)
         int AgeGroup;
         if (age > 0 && age <= 30) AgeGroup = 20;
         else if (age < 40) AgeGroup = 30;

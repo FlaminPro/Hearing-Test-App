@@ -160,7 +160,8 @@ TextureImporter:
     secondaryTextures: []
     spriteCustomMetadata:
       entries: []
-    nameFileIdTable: {}
+    nameFileIdTable:
+      blank_quadrant_chart_dark_mode_0: 3956481667611993871
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

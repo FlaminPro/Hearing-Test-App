@@ -1,7 +1,10 @@
 using UnityEngine;
+using UnityEngine.UI;
 
 public class UI : MonoBehaviour
 {
+    public static UI instance;
+
     [Header("Menu Panels")]
     [SerializeField] GameObject MainMenu;
     [SerializeField] GameObject QuestionnaireMenu;
@@ -12,46 +15,61 @@ public class UI : MonoBehaviour
     [Header("Script References")]
     [SerializeField] ResultsManager resultsManager;
 
+    [Header("Buttons")]
+    [SerializeField] Button StartBTN;
+
     private void Awake()
     {
+        //Initialize Static Data
         StaticDataAndHelpers.Init();
+        
         MainMenu.SetActive(true);
         QuestionnaireMenu.SetActive(false);
         CalibrationMenu.SetActive(false);
         TestMenu.SetActive(false);
         ResultsMenu.SetActive(false);
+        
+        //Singleton
+        instance = this;
+
+        //Events
+        StartBTN.onClick.AddListener(StartBTN_OnClick);
     }
 
-    // 1. Called by "START TEST" on MainMenu
-    public void StartQuestionnaire()
+    #region MainMenu
+    private void StartBTN_OnClick()
     {
         StaticDataAndHelpers.patientHistory = new PatientHistory();
         MainMenu.SetActive(false);
         QuestionnaireMenu.SetActive(true);
     }
+    #endregion
 
-    // 2. Called by "Back" on QuestionnaireMenu
-    public void QuestionnaireBackBTN()
+
+    #region QuestionnaireMenu
+    public void QuestionnaireBackBTN_OnClick()
     {
+        QuestionnaireManager.instance.ResetDefaults();
         MainMenu.SetActive(true);
         QuestionnaireMenu.SetActive(false);
     }
 
-    // 3. Called from QuestionnaireManager.cs
     public void CalibrateMenu()
     {
         QuestionnaireMenu.SetActive(false);
         CalibrationMenu.SetActive(true);
     }
 
-    // 4. Called by "Back" on CalibrationMenu
+    #endregion
+
+    #region CalibrationMenu
+
     public void CalibrateBackBTN()
     {
         QuestionnaireMenu.SetActive(true);
         CalibrationMenu.SetActive(false);
     }
 
-    // 5. Called from HearingTestManager.cs
     public void TestMenuFunc()
     {
         if (StaticDataAndHelpers.thresholds_dBFS == null) { Debug.LogError("No Calibration Data"); }
@@ -62,14 +80,15 @@ public class UI : MonoBehaviour
         }
     }
 
-    // 6. Called by "Back" on TestMenu
+    #endregion
+
+    #region TestMenu
     public void TestMenuBackFunc()
     {
         CalibrationMenu.SetActive(true);
         TestMenu.SetActive(false);
     }
 
-    // 7. Called from AudiometryTest.cs
     public void ShowResultsMenu()
     {
         TestMenu.SetActive(false);
@@ -80,8 +99,9 @@ public class UI : MonoBehaviour
             resultsManager.DisplayResults();
         }
     }
+    #endregion
 
-    // 8. Called by "Menu" on ResultsMenu
+    #region ResultsMenu
     public void ReturnToMainMenu()
     {
         MainMenu.SetActive(true);
@@ -91,14 +111,12 @@ public class UI : MonoBehaviour
         ResultsMenu.SetActive(false);
     }
 
-    // 9. <-- NEW FUNCTION -->
-    // Called by "Retest" on ResultsMenu
     public void Retest()
     {
-        // Go back to the questionnaire and clear old data
         StaticDataAndHelpers.patientHistory = new PatientHistory();
-
+        QuestionnaireManager.instance.ResetDefaults();
         ResultsMenu.SetActive(false);
         QuestionnaireMenu.SetActive(true);
     }
+    #endregion
 }
